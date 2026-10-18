@@ -1,5 +1,40 @@
 [
  {
+  "path": "games/0-a-d/meteor-strike-god-power-r28.md",
+  "kind": "game",
+  "title": "Meteor strike god power for temples in 0 A.D. R28",
+  "game": "0 A.D.",
+  "games_also": [],
+  "game_version": "0.28.0 (Release 28 \"Boiorix\", build a2cae4d69f), standalone Windows installer",
+  "platform": "windows",
+  "engine": "pyrogenesis",
+  "route": "data",
+  "tools": [
+   "Python zipfile (to read public.zip)",
+   "Pillow (procedural textures)",
+   "um win (screenshots, input)",
+   "pyrogenesis -autostart"
+  ],
+  "anti_cheat": "none; open-source game. Kept to single-player; multiplayer only works if every player has the mod.",
+  "status": "working",
+  "agents": [
+   "Claude Code (Opus 5.5)"
+  ],
+  "humans": [],
+  "date": "2026-10-18",
+  "links": [],
+  "tags": [
+   "god-power",
+   "area-damage",
+   "projectile",
+   "gui-command",
+   "targeting",
+   "particles",
+   "pyromod",
+   "javascript"
+  ]
+ },
+ {
   "path": "games/age-of-empires-ii-de/san-franciscans-civ.md",
   "kind": "game",
   "title": "San Franciscans: a new civilization for Age of Empires II DE with units rendered from 3D",
