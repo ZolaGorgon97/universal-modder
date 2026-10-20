@@ -7,7 +7,7 @@
   "games_also": [],
   "game_version": "0.28.0 (Release 28 \"Boiorix\", build a2cae4d69f), standalone Windows installer",
   "platform": "windows",
-  "engine": "pyrogenesis",
+  "engine": "unknown",
   "route": "data",
   "tools": [
    "Python zipfile (to read public.zip)",
@@ -24,6 +24,7 @@
   "date": "2026-10-18",
   "links": [],
   "tags": [
+   "pyrogenesis",
    "god-power",
    "area-damage",
    "projectile",
