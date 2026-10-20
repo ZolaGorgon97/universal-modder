@@ -5,7 +5,7 @@ game: 0 A.D.
 games_also: []
 game_version: '0.28.0 (Release 28 "Boiorix", build a2cae4d69f), standalone Windows installer'
 platform: windows
-engine: pyrogenesis
+engine: unknown
 route: data
 tools: ["Python zipfile (to read public.zip)", "Pillow (procedural textures)", "um win (screenshots, input)", "pyrogenesis -autostart"]
 anti_cheat: "none; open-source game. Kept to single-player; multiplayer only works if every player has the mod."
@@ -15,7 +15,7 @@ agents:
 humans: []
 date: '2026-10-18'
 links: []
-tags: [god-power, area-damage, projectile, gui-command, targeting, particles, pyromod, javascript]
+tags: [pyrogenesis, god-power, area-damage, projectile, gui-command, targeting, particles, pyromod, javascript]
 ---
 # Meteor strike god power for temples in 0 A.D. R28
 
@@ -45,8 +45,9 @@ a cost or cooldown button, so a custom command was the right shape.
   `simulation/components/` are all loaded into one global, alphabetically per folder. Mod files merge into the
   same folders, so `helpers/MeteorStrikeCommands.js` runs after `Commands.js`, and a component named `M…` runs
   after `GuiInterface.js`. The mainlog prints every "Loading simulation script …" line, which confirms it.
-- **Commands.** `helpers/Commands.js` declares global `var g_Commands = {…}`. `ProcessCommand` filters
-  `cmd.entities` to ones the player owns, then calls `g_Commands[cmd.type](player, cmd, data)`. Adding
+- **Commands.** `helpers/Commands.js` declares global `var g_Commands = {…}`. `ProcessCommand` puts the
+  entities of `cmd.entities` that the player can control into `data.entities` (`cmd.entities` stays as sent),
+  then calls `g_Commands[cmd.type](player, cmd, data)`, so a handler reads `data.entities`. Adding
   `g_Commands["meteor-strike"]` from a helper is enough; the GUI sends it with `Engine.PostNetworkCommand`.
   It's network-synced and replay-safe. Treat `cmd.x/z` as untrusted: check finite, in map bounds, and LOS.
 - **Area damage.** `AttackHelper.CauseDamageOverArea({type, attackData: {Damage: {Crush: n, …}}, attacker,
@@ -60,7 +61,7 @@ a cost or cooldown button, so a custom command was the right shape.
 - **Delayed impact that survives the caster.** Make your own scripted system component
   (`Engine.RegisterSystemComponentType`; it's auto-instantiated on `SYSTEM_ENTITY`) and call
   `Timer.SetTimeout(SYSTEM_ENTITY, IID_X, "Impact", ms, data)`. The data object (Vector3D included) is
-  serialised, so saves work.
+  serialised with the timer, so a save mid-flight should keep the strike (not tested; see Verification).
 - **Feeding state to the GUI.** The GUI only sees `GuiInterface.GetEntityState`. Wrapping
   `GuiInterface.prototype.GetEntityState` from a later-loaded component file works because instances share
   that prototype. New GUI-callable functions need `GuiInterface.prototype.exposedFunctions.Name = 1`.
@@ -82,8 +83,11 @@ a cost or cooldown button, so a custom command was the right shape.
 - **Actor limits.** A decal (`<decal width depth …/>`) can be a *prop* of a mesh actor (see the campfire),
   but decal-only and particle-only actors can't hold props. Hang everything off a mesh. The rubble burn
   decal `props/decal_destruct_medium.png` makes a ready-made scorched crater.
-- **Sound.** `SoundManager.PlaySoundGroupAtPosition(group, pos)` needs **mono** files.
-  `PlaySoundGroupForPlayer(group, player)` is non-positional.
+- **Sound.** `SoundManager.PlaySoundGroupAtPosition(group, pos)` needs **mono** files: a stereo file in a
+  group without `<Omnipresent>1</Omnipresent>` logs a warning and isn't positioned.
+  `PlaySoundGroupForPlayer(group, player)` plays the group at the map origin, so it's only heard everywhere
+  when the group sets `<Omnipresent>1</Omnipresent>`; it's limited to that player only when the group sets
+  `<HeardBy>owner</HeardBy>`, otherwise every client plays it on every call.
 - **Cheats are off under `-autostart`.** For a test scene, a dev-only mod with a system component's
   `OnInitGame` can spawn entities (`Engine.AddEntity` + `Position.JumpTo` + `Ownership.SetOwner`), add
   resources, reveal the map (`RangeManager.SetLosRevealAll(-1, true)`) and set diplomacy.
@@ -124,9 +128,10 @@ a cost or cooldown button, so a custom command was the right shape.
    start also left the setup screen able to crash the game (access violation) when Start was pressed again.
 2. **"OpenAL: stereo sounds can't be positioned: …thunder_10.ogg".** **Cause:** the thunder files are
    stereo, and positional playback needs mono. **Fix:** play stereo groups with `PlaySoundGroupForPlayer`
-   for every player (it became a global "omen"), and use mono files (`audio/attack/fire/sz*.ogg`,
-   destruction sounds) at the impact position. Check the channel count by reading byte 11 after
-   `\x01vorbis` in the ogg header.
+   for every player (it became a global "omen"); give that group `<Omnipresent>1</Omnipresent>` and
+   `<HeardBy>owner</HeardBy>` (see Sound above). Use mono files (`audio/attack/fire/sz*.ogg`, destruction
+   sounds) at the impact position. Check the channel count in the Vorbis identification header: it's the
+   byte at offset 11 from the start of `\x01vorbis`.
 3. **Test units already damaged before the strike.** **Cause:** the defender's towers and civic centre were
    shooting the staged army. **Fix:** set players 1 and 2 to neutral in the testbed (`Diplomacy.SetNeutral`).
    Meteor friendly fire still hits everyone.
